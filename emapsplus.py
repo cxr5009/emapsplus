@@ -7,31 +7,121 @@ import pandas as pd
 # Settings | Default
 st.set_page_config(layout="wide")
 
-# Initialize | Managing layers and markers
+# Initialize | Intilize the session state
 if 'layers' not in st.session_state:
     st.session_state['layers'] = {}
+
+# Helper | Widgets | Function to create a highly probable unique widget key
+def create_widget_key(parent, child, widget_type):
+    parent = parent.replace(' ', '_').lower()
+    child = child.replace(' ', '_').lower()
+    widget_type = widget_type.replace(' ', '_').lower()
+    return f"{parent}-{child}-{widget_type}"
+
+# Modal | Widgets | Function to render radius modal with options form
+@st.experimental_dialog("Radius options", width="large")
+def render_radius_options(radius_name):
+    radius_name = st.text_input('Radius name',
+                                value=radius_name,
+                                placeholder="Unique radius name",
+                                help="Enter a unique name for the radius",
+                                key=create_widget_key(radius_name, 'Radius name', 'text_input')
+                                )
+    radius_distance = st.slider('Radius distance',
+                                min_value=1,
+                                max_value=1000,
+                                value=42,
+                                step=1,
+                                help="Select the radius distance for the circle",
+                                key=create_widget_key(radius_name, 'Radius distance', 'slider')
+                                )
+    # Radius fill options
+    row1 = st.columns([1, 1, 2])
+    with row1[0]:
+        radius_fill_toggle = st.toggle('Fill radius', 
+                                        value=True, 
+                                        help="Fill the radius circle", 
+                                        key=create_widget_key(radius_name, 'Fill radius', 'toggle')
+                                        )
+    with row1[1]:
+        radius_fill_color = st.color_picker('Radius fill color', 
+                                            value="#3388ff", 
+                                            help="Choose a fill color for the radius circle", 
+                                            key=create_widget_key(radius_name, 'Radius fill color', 'color_picker')
+                                            )
+    with row1[2]:
+        radius_fill_opacity = st.slider('Radius fill opacity', 
+                                        min_value=0, 
+                                        max_value=100, 
+                                        value=100, 
+                                        step=5, 
+                                        help="Select the fill opacity for the radius circle", 
+                                        key=create_widget_key(radius_name, 'Radius opacity', 'slider')
+                                        )
+    # Radius border options
+    row2 = st.columns([1, 1, 2])
+    with row2[0]:
+        radius_border_weight = st.number_input('Radius border weight', 
+                                            min_value=1, 
+                                            max_value=10, 
+                                            value=2, 
+                                            step=1, 
+                                            help="Select the border weight for the radius circle", 
+                                            key=create_widget_key(radius_name, 'Radius border weight', 'number_input')
+                                            )
+    with row2[1]:
+        radius_border_color = st.color_picker('Radius border color', 
+                                                value="#3388ff", 
+                                                help="Choose a border color for the radius circle", 
+                                                key=create_widget_key(radius_name, 'Radius border color', 'color_picker')
+                                                )
+    with row2[2]:
+        radius_border_opacity = st.slider('Radius border opacity', 
+                                            min_value=0, 
+                                            max_value=100, 
+                                            value=100, 
+                                            step=5, 
+                                            help="Select the border opacity for the radius circle", 
+                                            key=create_widget_key(radius_name, 'Radius border opacity', 'slider')
+                                            )
+    # Submit button
+    submit_button = st.button('Add radius', key=create_widget_key(radius_name, 'Submit button', 'button'))
+    if submit_button:
+        st.toast(f"Added radius: {radius_name}", icon="➕")
+        st.rerun()
+
 
 # Sidebar | Function to add a new layer & expander
 def add_layer(layer_name):
     with st.sidebar.expander(layer_name):
         layer_key_base = f"{layer_name.replace(' ', '_').lower()}"
-        new_name = st.text_input('Rename layer', 
-                                 value=layer_name, 
-                                 placeholder="Rename layer", 
-                                 help="Enter a unique name for the layer", 
-                                 key=f"{layer_key_base}-name-input", 
-                                 label_visibility="collapsed"
-                                 )
-        color = st.color_picker('Marker color', 
+        col1, col2 = st.columns([0.1, 0.9])
+        with col1:
+            color = st.color_picker('Marker color', 
                                 value=st.session_state['layers'][layer_name]['color'],
                                 help="Choose a color for the markers in this layer", 
-                                key=f"{layer_key_base}-color-picker"
+                                key=f"{layer_key_base}-color-picker",
+                                label_visibility="collapsed"
                                 )
-        cluster = st.checkbox('Marker clustering', 
-                              value=st.session_state['layers'][layer_name]['cluster'], 
-                              help="Enable marker clustering for this layer",
-                              key=f"{layer_key_base}-cluster-checkbox"
+        with col2:
+            new_name = st.text_input('Rename layer', 
+                                    value=layer_name, 
+                                    placeholder="Rename layer", 
+                                    help="Enter a unique name for the layer", 
+                                    key=f"{layer_key_base}-name-input", 
+                                    label_visibility="collapsed"
+                                    )
+        cluster = st.toggle('Marker clustering', 
+                            value=st.session_state['layers'][layer_name]['cluster'], 
+                            help="Enable marker clustering for this layer",
+                            key=f"{layer_key_base}-cluster-toggle"
                               )
+        add_radius = st.button('➕ Add radius', key=f"{layer_key_base}-add-radius-button", 
+                               help="Add a radius to the map", 
+                               use_container_width=True
+                               )
+        if add_radius:
+            render_radius_options(f"{layer_name}-Radius")
 
         col1, col2, col3 = st.columns([0.5, 0.2, 0.2])
         with col2:
